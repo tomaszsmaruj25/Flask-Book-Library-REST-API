@@ -1,9 +1,11 @@
 from flask import jsonify
 from book_library_app import app
-
+from book_library_app.models import Author
 
 @app.route('/api/v1/authors', methods=['GET'])
 def get_authors():
+    authors = Author.query.all()
+    print(authors)
     return jsonify({
         'success': True,
         'data': 'Get authors'
