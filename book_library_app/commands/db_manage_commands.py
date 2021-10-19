@@ -1,9 +1,10 @@
 import json
 from pathlib import Path
-from book_library_app import db
 from datetime import datetime
-from book_library_app.commands import db_manage_bp
+
+from book_library_app import db
 from book_library_app.models import Author, Book
+from book_library_app.commands import db_manage_bp
 
 
 def load_json_data(file_name: str) -> list:
@@ -15,7 +16,7 @@ def load_json_data(file_name: str) -> list:
 
 @db_manage_bp.cli.group()
 def db_manage():
-    """Database management command"""
+    """Database management commands"""
     pass
 
 
@@ -35,20 +36,20 @@ def add_data():
             db.session.add(book)
 
         db.session.commit()
-        print("Data has been successfully added to database")
+        print('Data has been successfully added to the database')
     except Exception as exc:
         print("Unexpected error: {}".format(exc))
 
 
 @db_manage.command()
 def remove_data():
-    """Remove all data from database"""
+    """Remove all data from the database"""
     try:
         db.session.execute('DELETE FROM books')
         db.session.execute('ALTER TABLE books AUTO_INCREMENT = 1')
         db.session.execute('DELETE FROM authors')
         db.session.execute('ALTER TABLE authors AUTO_INCREMENT = 1')
         db.session.commit()
-        print("Data has been successfully removed")
+        print('Data has been successfully removed from the database')
     except Exception as exc:
         print("Unexpected error: {}".format(exc))

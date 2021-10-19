@@ -1,5 +1,6 @@
+import jwt
 import re
-from flask import request, url_for, current_app
+from flask import request, url_for, current_app, abort
 from flask_sqlalchemy import DefaultMeta, BaseQuery
 from functools import wraps
 from sqlalchemy.orm.attributes import InstrumentedAttribute
@@ -7,7 +8,6 @@ from sqlalchemy.sql.expression import BinaryExpression
 from typing import Tuple
 from werkzeug.exceptions import UnsupportedMediaType
 
-from config import Config
 
 COMPARISON_OPERATORS_RE = re.compile(r'(.*)\[(gte|gt|lte|lt)\]')
 
@@ -17,8 +17,29 @@ def validate_json_content_type(func):
     def wrapper(*args, **kwargs):
         data = request.get_json()
         if data is None:
-            raise UnsupportedMediaType('Content/type must be application/json')
+            raise UnsupportedMediaType('Content type must be application/json')
         return func(*args, **kwargs)
+    return wrapper
+
+
+def token_required(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        token = None
+        auth = request.headers.get('Authorization')
+        if auth:
+            token = auth.split(' ')[1]
+        if token is None:
+            abort(401, description='Missing token. Please login or register')
+
+        try:
+            payload = jwt.decode(token, current_app.config.get('SECRET_KEY'), algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            abort(401, description='Expired token. Please login to get new token')
+        except jwt.InvalidTokenError:
+            abort(401, description='Invalid token. Please login or register')
+        else:
+            return func(payload['user_id'], *args, **kwargs)
     return wrapper
 
 
@@ -75,12 +96,12 @@ def apply_filter(model: DefaultMeta, query: BaseQuery) -> BaseQuery:
 def get_pagination(query: BaseQuery, func_name: str) -> Tuple[list, dict]:
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', current_app.config.get('PER_PAGE', 5), type=int)
-    params = {key: value for key, value in request.args.items() if key!='page'}
+    params = {key: value for key, value in request.args.items() if key != 'page'}
     paginate_obj = query.paginate(page, limit, False)
     pagination = {
         'total_pages': paginate_obj.pages,
         'total_records': paginate_obj.total,
-        'current_page': url_for(func_name, page=page)
+        'current_page': url_for(func_name, page=page, **params)
     }
 
     if paginate_obj.has_next:
@@ -90,3 +111,4 @@ def get_pagination(query: BaseQuery, func_name: str) -> Tuple[list, dict]:
         pagination['previous_page'] = url_for(func_name, page=page-1, **params)
 
     return paginate_obj.items, pagination
+
