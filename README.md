@@ -1,5 +1,5 @@
 # Book Library REST API
-
+Code was implemented thanks to the Udemy course - [REST API development step by step - Python | Flask | MySQL ](https://www.udemy.com/course/rest-api-krok-po-kroku-python-flask-mysql). 
 REST API for online library. It supports authors of books and books resources including authentication (JWT Token).
 
 The documentation can be found in `documentation.html` or [here](https://documenter.getpostman.com/view/7306302/T1DjjKJd?version=latest)
